@@ -14,17 +14,17 @@ export function StatsBar({ totalHemocentros, totalEstados, filteredCount }: Stat
       <div className="flex items-center gap-2">
         <Building2 className="w-4 h-4 text-primary" />
         <span>
-          <strong className="text-foreground">{totalHemocentros}</strong> hemocentros cadastrados
+          <strong className="text-primary font-bold">{totalHemocentros}</strong> hemocentros cadastrados
         </span>
       </div>
       <div className="flex items-center gap-2">
         <MapPinned className="w-4 h-4 text-primary" />
         <span>
-          <strong className="text-foreground">{totalEstados}</strong> estados
+          <strong className="text-primary font-bold">{totalEstados}</strong> estados
         </span>
       </div>
       {hasFilter && (
-        <div className="bg-accent text-accent-foreground px-3 py-1 rounded-full text-xs font-medium">
+        <div className="bg-secondary/10 text-secondary border border-secondary/20 px-3 py-1 rounded-full text-xs font-medium">
           Filtrado: {filteredCount} resultado{filteredCount !== 1 ? "s" : ""}
         </div>
       )}

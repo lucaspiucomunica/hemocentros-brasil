@@ -26,7 +26,7 @@ export function FilterBar({
   locationError,
 }: FilterBarProps) {
   return (
-    <div className="bg-card shadow-card rounded-lg p-4 md:p-6 -mt-8 relative z-10">
+    <div className="bg-card shadow-card rounded-lg p-4 md:p-6">
       <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
         <div className="flex-1">
           <label className="text-sm font-medium text-muted-foreground mb-2 block">

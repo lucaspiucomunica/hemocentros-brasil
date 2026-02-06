@@ -6,6 +6,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Slider } from "@/components/ui/slider";
 import { getCroppedImg, type CropAreaPixels } from "@/utils/cropImage";
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbSeparator,
+  BreadcrumbPage,
+} from "@/components/ui/breadcrumb";
 
 const ASPECT_MOLDURA = 9 / 16;
 
@@ -171,25 +179,21 @@ const FotoMoldura = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background py-12 md:py-16">
-        <div className="container mx-auto px-4 text-center">
-          <div className="flex justify-center mb-4">
-            <div className="p-4 bg-primary/10 rounded-full">
-              <ImageIcon className="w-12 h-12 text-primary" />
-            </div>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            Foto com Moldura
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Envie sua foto e receba uma versão com moldura personalizada
-          </p>
-        </div>
-      </div>
-
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-12 max-w-3xl">
+      <main className="container mx-auto px-4 py-8 max-w-3xl">
+        <Breadcrumb className="mb-6">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Home</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Foto com Moldura</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
+        <h1 className="text-4xl font-bold mb-8 text-center">Foto com Moldura</h1>
         {/* Estado: Idle - Upload Area */}
         {state === 'idle' && (
           <>
@@ -461,13 +465,6 @@ const FotoMoldura = () => {
           </div>
         )}
       </main>
-
-      {/* Footer */}
-      <footer className="bg-card border-t border-border py-6 text-center text-sm text-muted-foreground mt-12">
-        <div className="container mx-auto px-4">
-          <p>Transforme suas fotos com molduras personalizadas</p>
-        </div>
-      </footer>
     </div>
   );
 };

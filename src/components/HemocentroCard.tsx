@@ -27,7 +27,7 @@ export function HemocentroCard({
           <h3 className="font-display font-semibold text-lg text-foreground group-hover:text-primary transition-colors">
             {hemocentro.nome}
           </h3>
-          <Badge variant="secondary" className="shrink-0">
+          <Badge variant="secondary" className="shrink-0 bg-secondary text-secondary-foreground">
             {hemocentro.estado}
           </Badge>
         </div>

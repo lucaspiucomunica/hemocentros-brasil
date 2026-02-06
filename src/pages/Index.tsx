@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from "react";
-import { HeroSection } from "@/components/HeroSection";
 import { FilterBar } from "@/components/FilterBar";
 import { HemocentrosList } from "@/components/HemocentrosList";
 import { StatsBar } from "@/components/StatsBar";
@@ -27,6 +26,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbSeparator,
+  BreadcrumbPage,
+} from "@/components/ui/breadcrumb";
 
 const ITEMS_PER_PAGE = 50;
 const MAX_DISTANCE_KM = 500;
@@ -243,8 +250,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <HeroSection />
-      
       {/* Dialog para distância além do limite */}
       <AlertDialog open={showDistanceDialog} onOpenChange={setShowDistanceDialog}>
         <AlertDialogContent>
@@ -276,8 +281,21 @@ const Index = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
-      <main className="container mx-auto px-4 pb-12">
+
+      <main className="container mx-auto px-4 py-8 pb-12 max-w-7xl">
+        <Breadcrumb className="mb-6">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Home</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Hemocentros</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
+        <h1 className="text-4xl font-bold mb-8">Encontre Hemocentros</h1>
         <FilterBar
           estados={estados}
           selectedEstado={selectedEstado}
@@ -344,12 +362,6 @@ const Index = () => {
           </div>
         )}
       </main>
-
-      <footer className="bg-card border-t border-border py-6 text-center text-sm text-muted-foreground">
-        <div className="container mx-auto px-4">
-          <p>Doe sangue, salve vidas ❤️</p>
-        </div>
-      </footer>
     </div>
   );
 };
