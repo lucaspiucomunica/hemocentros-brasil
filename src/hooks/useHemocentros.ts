@@ -3,127 +3,74 @@ import { Hemocentro } from "@/types/hemocentro";
 
 const API_URL = "https://lucassampaio.app.n8n.cloud/webhook/hemocentros";
 
-export interface ApiResponse {
-  sucesso: boolean;
-  total: number;
-  pagina: number;
-  por_pagina: number;
-  total_paginas: number;
-  dados: Hemocentro[];
-}
-
-interface FetchHemocentrosParams {
-  page?: number;
-  estado?: string;
-}
-
-async function fetchHemocentros({ page = 1, estado }: FetchHemocentrosParams): Promise<ApiResponse> {
-  const params = new URLSearchParams();
-  params.append("pagina", page.toString());
-  if (estado && estado !== "all") {
-    params.append("estado", estado);
-  }
-  
-  const response = await fetch(`${API_URL}?${params.toString()}`);
+// Busca TODOS os hemocentros de uma única vez (sem filtros, sem paginação)
+// A API do n8n agora retorna todos os dados em uma única chamada
+async function fetchAllHemocentros(): Promise<Hemocentro[]> {
+  const response = await fetch(API_URL);
   if (!response.ok) {
     throw new Error("Erro ao carregar hemocentros");
   }
-  const data: ApiResponse = await response.json();
-  return data;
-}
-
-// Busca TODAS as páginas e retorna todos os hemocentros (com filtro opcional de estado)
-async function fetchAllHemocentros(estado?: string): Promise<Hemocentro[]> {
-  // Constrói a URL da primeira página
-  const params = new URLSearchParams();
-  params.append("pagina", "1");
-  if (estado && estado !== "all") {
-    params.append("estado", estado);
-  }
-
-  // Busca primeira página para saber quantas páginas existem
-  const firstResponse = await fetch(`${API_URL}?${params.toString()}`);
-  if (!firstResponse.ok) {
-    throw new Error("Erro ao carregar hemocentros");
-  }
-  const firstData: ApiResponse = await firstResponse.json();
+  const data = await response.json();
   
-  const totalPages = firstData.total_paginas;
-  const allHemocentros: Hemocentro[] = [...(firstData.dados || [])];
-
-  // Se houver mais páginas, busca todas em paralelo
-  if (totalPages > 1) {
-    const pagePromises: Promise<ApiResponse>[] = [];
+  // Compatibilidade: suporta tanto formato novo (array) quanto antigo (objeto com .dados)
+  // Formato NOVO (simplificado): [ {...}, {...}, ... ]
+  if (Array.isArray(data)) {
+    console.log("✅ API no formato NOVO (otimizado) - array direto");
+    return data;
+  }
+  
+  // Formato ANTIGO (paginado): { "dados": [ {...}, {...}, ... ], "pagina": 1, "total_paginas": 7 }
+  if (data && Array.isArray(data.dados)) {
+    console.warn("⚠️ API ainda no formato ANTIGO (paginado).");
+    console.warn("📋 Atualize o workflow no n8n para economizar execuções!");
+    console.warn("📄 Veja: GUIA_ATUALIZACAO_N8N.md");
     
-    for (let page = 2; page <= totalPages; page++) {
-      const pageParams = new URLSearchParams();
-      pageParams.append("pagina", page.toString());
-      if (estado && estado !== "all") {
-        pageParams.append("estado", estado);
+    const allHemocentros: Hemocentro[] = [...data.dados];
+    const totalPages = data.total_paginas || 1;
+    
+    // Se houver mais páginas, busca todas
+    if (totalPages > 1) {
+      console.log(`📥 Buscando ${totalPages} páginas...`);
+      const pagePromises: Promise<any>[] = [];
+      
+      for (let page = 2; page <= totalPages; page++) {
+        pagePromises.push(
+          fetch(`${API_URL}?pagina=${page}`)
+            .then((res) => {
+              if (!res.ok) throw new Error(`Erro ao carregar página ${page}`);
+              return res.json();
+            })
+        );
       }
       
-      pagePromises.push(
-        fetch(`${API_URL}?${pageParams.toString()}`)
-          .then((res) => {
-            if (!res.ok) throw new Error(`Erro ao carregar página ${page}`);
-            return res.json();
-          })
-      );
-    }
-
-    const pageResults = await Promise.all(pagePromises);
-    
-    for (const pageData of pageResults) {
-      if (pageData.dados && Array.isArray(pageData.dados)) {
-        allHemocentros.push(...pageData.dados);
+      const pageResults = await Promise.all(pagePromises);
+      
+      for (const pageData of pageResults) {
+        if (pageData.dados && Array.isArray(pageData.dados)) {
+          allHemocentros.push(...pageData.dados);
+        }
       }
+      
+      console.log(`✅ ${allHemocentros.length} hemocentros carregados de ${totalPages} páginas`);
     }
+    
+    return allHemocentros;
   }
-
-  return allHemocentros;
+  
+  // Formato desconhecido
+  console.error("❌ Formato de resposta inesperado:", data);
+  throw new Error("Formato de resposta da API inválido");
 }
 
-// Hook para buscar hemocentros com paginação e filtros
-export function useHemocentros(page: number = 1, estado?: string) {
+// Hook principal - busca TODOS os hemocentros de uma vez
+// Cache de 30 DIAS (2.592.000.000 ms) já que os dados são atualizados mensalmente
+export function useAllHemocentros() {
   return useQuery({
-    queryKey: ["hemocentros", page, estado],
-    queryFn: () => fetchHemocentros({ page, estado }),
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
-}
-
-// Hook para buscar TODOS os hemocentros (para ordenação por distância)
-export function useAllHemocentros(enabled: boolean = true, estado?: string) {
-  return useQuery({
-    queryKey: ["hemocentros", "all", estado],
-    queryFn: () => fetchAllHemocentros(estado),
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    enabled, // Só busca quando enabled = true
-  });
-}
-
-// Hook para buscar todos os estados disponíveis
-export function useEstados() {
-  return useQuery({
-    queryKey: ["hemocentros", "estados"],
-    queryFn: async () => {
-      const allHemocentros = await fetchAllHemocentros();
-      const uniqueEstados = [...new Set(allHemocentros.map((h) => h.estado))];
-      return uniqueEstados.sort((a, b) => a.localeCompare(b, "pt-BR"));
-    },
-    staleTime: 1000 * 60 * 10, // 10 minutes
-  });
-}
-
-// Hook para buscar o total geral (sem filtros)
-export function useHemocentrosTotals() {
-  return useQuery({
-    queryKey: ["hemocentros", "totals"],
-    queryFn: () => fetchHemocentros({ page: 1 }),
-    staleTime: 1000 * 60 * 10, // 10 minutes (muda menos)
-    select: (data) => ({
-      total: data.total,
-      totalPaginas: data.total_paginas,
-    }),
+    queryKey: ["hemocentros", "all"],
+    queryFn: fetchAllHemocentros,
+    staleTime: 1000 * 60 * 60 * 24 * 30, // 30 dias
+    gcTime: 1000 * 60 * 60 * 24 * 30, // 30 dias (cache persistente)
+    refetchOnWindowFocus: false, // Não recarrega ao focar na janela
+    refetchOnReconnect: false, // Não recarrega ao reconectar
   });
 }

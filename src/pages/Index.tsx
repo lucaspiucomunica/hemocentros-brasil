@@ -3,7 +3,7 @@ import { HeroSection } from "@/components/HeroSection";
 import { FilterBar } from "@/components/FilterBar";
 import { HemocentrosList } from "@/components/HemocentrosList";
 import { StatsBar } from "@/components/StatsBar";
-import { useHemocentros, useHemocentrosTotals, useAllHemocentros, useEstados } from "@/hooks/useHemocentros";
+import { useAllHemocentros } from "@/hooks/useHemocentros";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { calculateDistance } from "@/utils/distance";
 import { Hemocentro } from "@/types/hemocentro";
@@ -41,46 +41,25 @@ const Index = () => {
   
   const { latitude, longitude, loading: loadingLocation, error: locationError, requestLocation } = useGeolocation();
   
-  // Busca totais gerais (sem filtros) - para os badges
-  const { data: totalsData } = useHemocentrosTotals();
+  // Busca TODOS os hemocentros de uma vez (única chamada à API)
+  const { data: allHemocentrosData, isLoading, error } = useAllHemocentros();
   
-  // Busca TODOS os estados disponíveis (para o dropdown de filtro)
-  const { data: estados = [] } = useEstados();
+  // Extrai lista de estados únicos dos dados
+  const estados = useMemo(() => {
+    if (!allHemocentrosData) return [];
+    const uniqueEstados = [...new Set(allHemocentrosData.map((h) => h.estado))];
+    return uniqueEstados.sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [allHemocentrosData]);
   
-  // Busca dados filtrados com paginação (quando NÃO está ordenando por distância)
-  const { data: apiResponse, isLoading: isLoadingPaged, error: errorPaged } = useHemocentros(
-    currentPage, 
-    selectedEstado !== "all" ? selectedEstado : undefined
-  );
-
-  // Busca TODOS os dados (SOMENTE quando está ordenando por distância)
-  // Quando ordena por distância, NÃO aplica filtro de estado
-  const { data: allHemocentrosData, isLoading: isLoadingAll, error: errorAll } = useAllHemocentros(
-    sortByDistance,
-    undefined // Sempre busca todos os estados quando ordena por distância
-  );
-
-  // Decide qual fonte de dados usar
-  const isLoading = sortByDistance ? isLoadingAll : isLoadingPaged;
-  const error = sortByDistance ? errorAll : errorPaged;
+  // Total geral de hemocentros (sem filtros)
+  const totalGeralHemocentros = allHemocentrosData?.length || 0;
   
-  let hemocentros: Hemocentro[] = [];
-  let totalPages = 1;
-  let totalFiltrado = 0;
-
-  if (sortByDistance && allHemocentrosData) {
-    // Quando ordena por distância, usa todos os dados
-    hemocentros = allHemocentrosData;
-    totalFiltrado = allHemocentrosData.length;
-  } else if (apiResponse) {
-    // Quando usa filtros normais, usa dados paginados da API
-    hemocentros = apiResponse.dados || [];
-    totalPages = apiResponse.total_paginas || 1;
-    totalFiltrado = apiResponse.total || 0;
-  }
-  
-  // Total geral (sem filtros) para os badges
-  const totalGeralHemocentros = totalsData?.total || 0;
+  // Filtra hemocentros por estado (no frontend)
+  const filteredByEstado = useMemo(() => {
+    if (!allHemocentrosData) return [];
+    if (selectedEstado === "all") return allHemocentrosData;
+    return allHemocentrosData.filter((h) => h.estado === selectedEstado);
+  }, [allHemocentrosData, selectedEstado]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -92,11 +71,11 @@ const Index = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPage]);
 
-  // Calculate distances and sort hemocentros
+  // Calcula distâncias e ordena hemocentros (no frontend)
   const processedHemocentros = useMemo(() => {
-    if (!hemocentros || !Array.isArray(hemocentros)) return [];
+    if (!filteredByEstado || !Array.isArray(filteredByEstado)) return [];
 
-    let result: (Hemocentro & { distance?: number })[] = hemocentros.map((h) => {
+    let result: (Hemocentro & { distance?: number })[] = filteredByEstado.map((h) => {
       if (latitude !== null && longitude !== null) {
         return {
           ...h,
@@ -106,7 +85,7 @@ const Index = () => {
       return h;
     });
 
-    // Sort by distance if location is available and user requested it
+    // Ordena por distância se a localização estiver disponível e o usuário solicitou
     if (sortByDistance && latitude !== null && longitude !== null) {
       result = result.sort((a, b) => (a.distance || 0) - (b.distance || 0));
       
@@ -137,30 +116,18 @@ const Index = () => {
     }
 
     return result;
-  }, [hemocentros, latitude, longitude, sortByDistance, showBeyondLimit, showDistanceDialog]);
+  }, [filteredByEstado, latitude, longitude, sortByDistance, showBeyondLimit, showDistanceDialog]);
 
-  // Paginação manual quando está ordenando por distância (paginação frontend)
+  // Paginação no frontend
   const paginatedHemocentros = useMemo(() => {
-    if (!sortByDistance) {
-      // Usa dados já paginados da API
-      return processedHemocentros;
-    }
-    
-    // Pagina manualmente no frontend quando ordena por distância
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
     return processedHemocentros.slice(startIndex, endIndex);
-  }, [processedHemocentros, currentPage, sortByDistance]);
+  }, [processedHemocentros, currentPage]);
 
   // Calcula total de páginas e verifica se deve mostrar paginação
-  const totalPagesCalculated = sortByDistance 
-    ? Math.ceil(processedHemocentros.length / ITEMS_PER_PAGE)
-    : totalPages;
-  
-  const totalFiltradoCalculated = sortByDistance
-    ? processedHemocentros.length
-    : totalFiltrado;
-
+  const totalPagesCalculated = Math.ceil(processedHemocentros.length / ITEMS_PER_PAGE);
+  const totalFiltradoCalculated = processedHemocentros.length;
   const showPagination = !isLoading && !error && totalFiltradoCalculated > ITEMS_PER_PAGE;
 
   const handleNearMeClick = () => {
@@ -185,13 +152,6 @@ const Index = () => {
     setShowDistanceDialog(false);
     setSortByDistance(false); // Desativa o modo de distância
   };
-
-  // Auto-sort when location becomes available
-  useEffect(() => {
-    if (latitude !== null && longitude !== null && sortByDistance) {
-      // Location received, list will be sorted automatically via useMemo
-    }
-  }, [latitude, longitude, sortByDistance]);
 
   // Generate pagination items
   const renderPaginationItems = () => {
