@@ -1,0 +1,31 @@
+import { Building2, MapPinned } from "lucide-react";
+
+interface StatsBarProps {
+  totalHemocentros: number;
+  totalEstados: number;
+  filteredCount: number;
+}
+
+export function StatsBar({ totalHemocentros, totalEstados, filteredCount }: StatsBarProps) {
+  return (
+    <div className="flex flex-wrap items-center gap-4 md:gap-6 py-4 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2">
+        <Building2 className="w-4 h-4 text-primary" />
+        <span>
+          <strong className="text-foreground">{totalHemocentros}</strong> hemocentros cadastrados
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <MapPinned className="w-4 h-4 text-primary" />
+        <span>
+          <strong className="text-foreground">{totalEstados}</strong> estados
+        </span>
+      </div>
+      {filteredCount !== totalHemocentros && (
+        <div className="bg-accent text-accent-foreground px-3 py-1 rounded-full text-xs font-medium">
+          Exibindo {filteredCount} resultado{filteredCount !== 1 ? "s" : ""}
+        </div>
+      )}
+    </div>
+  );
+}
