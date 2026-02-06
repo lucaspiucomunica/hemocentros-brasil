@@ -31,8 +31,7 @@ export function Header() {
         {/* Logo */}
         <NavLink to="/" className="flex items-center gap-2 font-bold text-lg">
           <Heart className="h-6 w-6 text-primary" />
-          <span className="hidden sm:inline">Hemocentros Brasil</span>
-          <span className="sm:hidden">HemoBR</span>
+          <span className="inline">Hemocentros Brasil</span>
         </NavLink>
 
         {/* Desktop Navigation */}
