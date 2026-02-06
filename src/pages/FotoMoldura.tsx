@@ -112,8 +112,17 @@ const FotoMoldura = () => {
       const formData = new FormData();
       formData.append('data', fileToSend);
 
-      // Usa o proxy configurado no Vite para evitar problemas de CORS
-      const response = await fetch("/api/foto-moldura", {
+      // Em desenvolvimento usamos o proxy (/api/foto-moldura);
+      // em produção chamamos diretamente o webhook do n8n.
+      const webhookUrl = import.meta.env.DEV
+        ? "/api/foto-moldura"
+        : import.meta.env.VITE_WEBHOOK_MOLDURA;
+
+      if (!webhookUrl) {
+        throw new Error('URL do webhook não configurada. Verifique as variáveis de ambiente.');
+      }
+
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         body: formData,
       });
