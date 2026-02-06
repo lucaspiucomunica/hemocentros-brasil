@@ -148,15 +148,6 @@ O tema do Tailwind pode ser customizado em `tailwind.config.ts`. Os componentes 
 
 ## 🔄 Fluxo de Desenvolvimento
 
-### Trabalhando com Lovable
-
-Este projeto foi gerado no [Lovable](https://lovable.dev/) e pode ser editado de várias formas:
-
-1. **Via Lovable Platform**: Alterações feitas no Lovable são commitadas automaticamente
-2. **Via IDE Local**: Clone o repo, faça alterações e dê push - serão refletidas no Lovable
-3. **Via GitHub**: Edite arquivos diretamente no GitHub
-4. **Via GitHub Codespaces**: Ambiente de desenvolvimento na nuvem
-
 ### Adicionando novas páginas
 
 1. Crie um arquivo em `src/pages/`
@@ -199,11 +190,6 @@ npm run test:watch
 ```
 
 ## 📦 Deploy
-
-### Via Lovable
-
-1. Abra seu projeto no [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID)
-2. Clique em **Share → Publish**
 
 ### Manual
 
